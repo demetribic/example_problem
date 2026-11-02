@@ -1,0 +1,101 @@
+"","item_id","name","price"
+"1",1,"Laptop",1500
+"2",2,"RAM - 16GB",300
+"3",3,"CPU",234
+"4",4,"Gaming Laptop",2200
+"5",5,"Ultrabook",1300
+"6",6,"Chromebook",350
+"7",7,"Desktop Tower PC",1100
+"8",8,"Mini PC",450
+"9",9,"All-in-One PC",1250
+"10",10,"Workstation",3200
+"11",11,"Tablet 10-inch",400
+"12",12,"Tablet 12-inch",750
+"13",13,"Smartphone",800
+"14",14,"RAM - 8GB",150
+"15",15,"RAM - 32GB",550
+"16",16,"RAM - 64GB",1000
+"17",17,"SSD 500GB",70
+"18",18,"SSD 1TB",110
+"19",19,"SSD 2TB",190
+"20",20,"SSD 4TB",360
+"21",21,"HDD 2TB",65
+"22",22,"HDD 4TB",95
+"23",23,"HDD 8TB",160
+"24",24,"External SSD 1TB",120
+"25",25,"External HDD 4TB",105
+"26",26,"USB Flash Drive 64GB",12
+"27",27,"USB Flash Drive 256GB",30
+"28",28,"SD Card 128GB",20
+"29",29,"CPU - Mid Range",320
+"30",30,"CPU - High End",550
+"31",31,"GPU - Entry Level",280
+"32",32,"GPU - Mid Range",550
+"33",33,"GPU - High End",1200
+"34",34,"Motherboard - ATX",220
+"35",35,"Motherboard - Micro ATX",150
+"36",36,"Motherboard - Mini ITX",180
+"37",37,"Power Supply 550W",75
+"38",38,"Power Supply 750W",110
+"39",39,"Power Supply 1000W",180
+"40",40,"PC Case - Mid Tower",90
+"41",41,"PC Case - Full Tower",160
+"42",42,"CPU Air Cooler",45
+"43",43,"Liquid CPU Cooler 240mm",120
+"44",44,"Case Fan 120mm",12
+"45",45,"Thermal Paste",8
+"46",46,"Monitor 24-inch",180
+"47",47,"Monitor 27-inch",280
+"48",48,"Monitor 32-inch 4K",480
+"49",49,"Ultrawide Monitor 34-inch",550
+"50",50,"Portable Monitor",220
+"51",51,"Mechanical Keyboard",110
+"52",52,"Wireless Keyboard",45
+"53",53,"Wired Keyboard",25
+"54",54,"Wireless Mouse",30
+"55",55,"Gaming Mouse",60
+"56",56,"Ergonomic Mouse",70
+"57",57,"Mouse Pad",10
+"58",58,"Webcam 1080p",65
+"59",59,"Webcam 4K",150
+"60",60,"Headset with Microphone",80
+"61",61,"Wireless Headphones",200
+"62",62,"Desktop Speakers",60
+"63",63,"Bluetooth Speaker",90
+"64",64,"USB Microphone",100
+"65",65,"Wi-Fi Router",120
+"66",66,"Mesh Wi-Fi System",250
+"67",67,"Network Switch 8-Port",40
+"68",68,"Network Switch 24-Port",200
+"69",69,"Ethernet Cable 2m",6
+"70",70,"Ethernet Cable 10m",15
+"71",71,"Wi-Fi USB Adapter",25
+"72",72,"Wireless Access Point",140
+"73",73,"Network Attached Storage",400
+"74",74,"UPS Battery Backup",130
+"75",75,"Surge Protector",25
+"76",76,"USB-C Hub",50
+"77",77,"Docking Station",220
+"78",78,"HDMI Cable 2m",9
+"79",79,"DisplayPort Cable",14
+"80",80,"USB-C Cable 1m",10
+"81",81,"Laptop Charger 65W",40
+"82",82,"Power Bank 20000mAh",45
+"83",83,"Laptop Bag",55
+"84",84,"Laptop Stand",35
+"85",85,"Monitor Arm",75
+"86",86,"Laser Printer",200
+"87",87,"Inkjet Printer",120
+"88",88,"Multifunction Printer",250
+"89",89,"Toner Cartridge",70
+"90",90,"Ink Cartridge Set",55
+"91",91,"Flatbed Scanner",140
+"92",92,"Graphics Tablet",180
+"93",93,"Game Controller",60
+"94",94,"VR Headset",450
+"95",95,"Office Software License",150
+"96",96,"Operating System License",140
+"97",97,"Antivirus Subscription 1yr",40
+"98",98,"Extended Warranty 3yr",200
+"99",99,"Smartwatch",300
+"100",100,"Projector",600
