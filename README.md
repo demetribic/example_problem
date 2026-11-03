@@ -1,5 +1,5 @@
 # Example Problem
-All of the data for this problem is synthetic data, which means it was made up and doesn't represent the real world.
+The data for this problem is synthetic data, which means it was made up and doesn't represent the real world.
 
 Please do not use any LLMs for this project to help you write code or advise you
 on how to approach things. Most of the time you will not have access to these tools at work so it's better to represent your abilities than an LLMs. 
