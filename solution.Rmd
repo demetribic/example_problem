@@ -1,0 +1,395 @@
+---
+title: "Order Shipment Analysis"
+author: "Demetri Bichara"
+date: "2026-11-07"
+output: 
+  pdf_document: 
+    df_print: kable
+    fig_caption: true
+    keep_tex: true
+    toc: true
+urlcolor: blue
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+```{r setup, include=FALSE}
+library(tidyverse)
+
+items = read_csv('items.csv')
+
+customers = read_csv('customers.csv')
+
+orders = read_csv('orders.csv')
+
+shipments = read_csv('shipments.csv')
+```
+
+# Part 1 - Goal A:
+
+Provide the following information for any instance:
+
+1.  **Order \#**
+2.  **Item Name**
+3.  **Quantity**
+4.  **Total value** (price x quantity)
+
+## Solution {#p1ASolution}
+
+```{r}
+unshipped <- orders |>
+  left_join(shipments, by = 'id', relationship = 'one-to-one') |>
+  left_join(items, by = 'item_id', relationship = 'many-to-one') |>
+  mutate(
+    why_unshipped = case_when(
+      is.na(status) ~ "No shipment record", 
+      status == "Pending" ~ "Not yet shipped",
+      TRUE ~ NA), 
+    total_value = price * quantity) |> 
+  filter(!is.na(why_unshipped)) |>
+  select(order_id, id, name, quantity, total_value, why_unshipped) |> 
+  arrange(order_id, id) 
+```
+
+
+```{r}
+unshipped
+```
+
+```{r}
+unshipped |>
+  summarize(
+    missing_prices = sum(is.na(total_value))
+    )
+```
+
+```{r}
+unshipped |>
+  summarize(
+    affected_orders = n_distinct(order_id),
+    unshipped_lines = n(),
+    total_unshipped_value = sum(total_value)
+  )
+```
+
+```{r}
+unshipped |>
+  group_by(why_unshipped) |>
+  summarize(
+    affected_orders = n_distinct(order_id),
+    unshipped_lines = n(),
+    total_unshipped_value = sum(total_value),
+    .groups = "drop"
+  )
+```
+
+To ID unshipped order lines, I first established the relationships
+between the orders, shipments, and items tables. The id column was found
+to be the most probable order-line identifier shared between orders and
+shipments. I ID'd 20 order lines that did not have a corresponding
+shipment record, and 51 shipment statuses that are Pending. A Complete
+shipment is assumed to fulfill the entire ordered quantity, since
+shipments don't specify shipment-level quantities. Lastly, I calculated
+total unshipped value for each unshipped order line via price \*
+quantity.
+
+## Methodology {#method}
+
+First, we need to know how to map 1 order to their corresponding
+shipments. The most probable path is a left joining of the shipments CSV
+on the orders CSV, which preserves every order line item (including the
+order line items without corresponding shipments).
+
+From inspecting the data in the two CSV's with RStudio, I can see the
+orders.id column has the same range as the shipments.id column. Due to
+this similarity, I think that the best way to left join the two tables
+is by using the `id` column for equality checking. If correct, the
+relationship for the two `id` columns is 1:0-1 (0 in the case of a
+missed shipment).
+
+We can do the same duplicate-checking test to start to assert the
+truthfulness of the described many-to-one relationship for the `item_id`
+column across the two tables orders and items.
+
+Checking for any duplicate values in the `id` column within both tables,
+which would break the proposed 1:0-1 mapping.
+
+### 1:0-1 test-A:
+
+```{r}
+any(duplicated(shipments$id)) # should be FALSE
+any(duplicated(orders$id)) # should be FALSE 
+```
+
+### N:1 test-A:
+
+```{r}
+any(duplicated(orders$item_id)) # should be TRUE (many-to-one)
+any(duplicated(items$item_id)) # should be FALSE
+```
+
+Since there aren't duplicates in the `id` column of either the shipments
+CSV or the orders CSV, we can further test my proposed relationship
+between the two tables by checking whether all `id` values in the
+shipment CSV exist in the `id` column of the orders CSV with an anti
+join. This will not fail on missed shipments since anti_join(shipments,
+orders) only tests whether shipment records have corresponding order
+lines. We can do the same check with the `item_id` column across the
+tables orders and items.
+
+### 1:0-1 test-B:
+
+```{r}
+shipments |> anti_join(orders, by = 'id') 
+```
+0 rows missing a corresponding id!
+
+### N:1 test-B:
+
+```{r}
+orders |> anti_join(items, by = 'item_id')
+```
+
+0 rows missing a corresponding id!
+
+Since all testing passed so far, we can further test the understood
+relationships by setting an expected relationship during the joining
+process.
+
+```{r, results='hide'}
+orders |> 
+  left_join(shipments, by = 'id', relationship = 'one-to-one') |>
+  left_join(items, by = 'item_id', relationship = 'many-to-one')
+```
+
+The joins executed without error, meaning matches during the join did
+not violate the declared relationships (wouldn't catch a missing
+shipment, okay because the cardinality is 1:0-1). The checks
+collectively provide strong evidence to move forward with the
+understanding.
+
+Now that we are confident in the relationships, we can start to
+investigate missing shipments by reversing the anti-join direction from
+'1:0-1 test-B'. This would show all order line items that did not have a
+corresponding shipment. Importantly, this would not catch all unshipped
+order lines by itself, since the corresponding status might not be
+'Complete'. Moreover, since the shipments table doesn't contain a
+quantity column, we will assume that a shipment line entry / row with
+the 'Complete' status indicates the entire corresponding quantity was
+sent.
+
+```{r}
+orders |> anti_join(shipments, by = 'id')
+```
+
+Checks for orders without matching shipment records: matched 20 order
+line items
+
+```{r}
+unique(shipments$status) 
+```
+
+2 possible values for a status entry {'Complete', 'Pending'} (no na).
+The literal meaning of `Pending` might be loose: if its been pending for
+9 months, is that an anomaly or a true shipping time? The most recent
+date in the shipments table's `ship_date` column is 11-02 of this year
+(2026), so we can use that point for detecting zombie shipments with an
+aging threshold. However, for purposes of this beta, we can further
+analysis knowing only 'pending'\<-\>'not yet shipped'.
+
+As to verify the data quality before further analysis, we can also make
+sure no shipment dates precede their order dates.
+
+```{r}
+orders |>
+  left_join(shipments, by = 'id') |>
+  filter(!is.na(ship_date), ship_date < order_date)
+```
+
+Matches 0 orders who have an earlier corresponding shipment record.
+
+Same type on the two `*_date` fields makes the comparison possible, so
+we should test that:
+
+```{r}
+class(orders$order_date)
+class(shipments$ship_date)
+```
+
+While {"Complete", "Pending"} are the only two values in the `status`
+column, it's worth it to check for shipments marked as `Complete`
+without it's corresponding evidence (the ship date). While a missing
+ship date doesn't automatically mean a false status entry, we do not
+have access to the underlying business logic generating the DB, so we
+can mark the results from all shipments who have a status = 'Complete'
+and no ship date.
+
+```{r}
+shipments |>
+  filter(
+    (status == "Complete" & is.na(ship_date)) |
+      (status == "Pending" & !is.na(ship_date)) # check the reverse also to make
+    #                                             sure business logic 
+    #                                              understanding is right
+    #                                 (pending shipments cannot have dates)
+  ) 
+```
+
+No such case! Moreover, we have to handle any missing shipment_id rows
+as to handle 'Pending' for ghost shipments
+
+```{r}
+shipments |> 
+  filter(is.na(shipment_id)) |>
+  count(status)
+```
+
+Matched 51 shipment record whose status is pending without a shipment ID
+(they shouldn't have it). Didn't catch any Complete order line items
+without a shipment ID.
+
+Assert we found all pending records.
+
+```{r}
+shipments |>
+  filter(status == "Pending") |>
+  summarize(n = n())
+```
+
+Since both tests display 51 records, we are more confident in the
+understanding of the business logic.
+
+With a strong validation / understanding of the data via the first
+phase, we can now finally get the raw unshipped order line item numbers
+and handle the observed cases!
+
+# Part 1 - Goal B:
+
+Describe how you would implement a process using to alert you of instances when orders didn't ship completely. How would you track it? How would you automate it?
+
+## Response {#p1BSolution}
+
+**Objective**
+
+I'd make a daily or bi-daily monitoring process that keeps track of
+marked order line items and their order_ids, and configure the
+appropriate teams messaging to automatically receive notices for when an
+order exceeds an agreed shipping timeframe.
+
+**1. Detect incomplete orders**
+
+The process would refresh the orders, shipments, and items datasets
+daily. Using the relationships established in Part 1, it would join the
+tables and classify each order line as Complete, Pending, or Missing
+Shipment Record. If the refresh fails, I'd notify the software
+maintainer.
+
+An order would be considered fully shipped only when all its
+corresponding order lines have a Complete status.
+
+**2. Track outstanding shipments**
+
+I would program the script to maintain a persistent table (periodically
+saving/overwriting backups to disk in case of a run-time crash)
+containing the order ID, order-line ID, customer, item, quantity,
+unshipped value, order date, current shipment status, and why the
+shipment was incomplete for each marked unshipped shipment line item.
+
+I would include more fields for recording when the exception was first
+detected, how long it has been since, whether an alert has been sent,
+and if / when it's been resolved. We can remove records from the
+tracking DB when the issue has been resolved for more than 30 days. We
+can also use the described fields to know when to re-notify a team of
+the issue.
+
+Missing shipment records allude to incomplete order lines, so an order
+should only be classified as fully shipped when every associated order
+line has a Complete shipment status.
+
+```{r}
+order_completion <- orders |>
+  left_join(
+    shipments,
+    by = "id",
+    relationship = "one-to-one"
+  ) |>
+  group_by(order_id) |>
+  summarize(
+    total_lines = n(),
+    incomplete_lines = sum(
+      is.na(status) | status != "Complete"
+    ),
+    fully_shipped = incomplete_lines == 0,
+    .groups = "drop"
+  )
+
+order_completion |>
+  filter(!fully_shipped)
+```
+
+```{r}
+
+joined <- orders |>
+  left_join(
+    shipments,
+    by = "id",
+    relationship = "one-to-one"
+  )
+
+joined |>
+  mutate(
+    incomplete = is.na(status) | status != "Complete"
+  ) |>
+  summarize(
+    total_lines = n(),
+    incomplete_lines = sum(incomplete),
+    affected_orders = n_distinct(order_id[incomplete])
+  )
+
+```
+
+```{r}
+joined |>
+  count(status)
+```
+
+```{r}
+order_completion |>
+  filter(!fully_shipped) |>
+  summarize(
+    affected_orders = n_distinct(order_id)
+  )
+```
+
+This would allow the company to track individual missed shipments across
+multiple days and can be used by a non-technical person.
+
+**3. Define alert conditions**
+
+Every incomplete order doesn't need to generate an immediate alert,
+because the company intentionally fulfills orders at different times.
+
+I would work with the operations team to establish an acceptable
+shipping timeframe. For example, orders remaining incomplete after two
+business days could generate an initial alert, while those outstanding
+for five business days could be escalated. Alerts would include the order number, affected items, and days outstanding.
+
+**4. Automate the process**
+
+I would refactor the existing R analysis into a scheduled script. The
+script would retrieve updated data, run validation checks, identify
+incomplete orders, and update the exception tracker.
+
+An email could summarize newly overdue orders and previously flagged
+orders that remain unresolved. Previously reported exceptions would not
+trigger duplicate initial alerts, and resolved orders would
+automatically be marked as closed. We can add a false-positive feedback
+button in notifications to know if the process needs improvement, and
+another periodically-sent form to report missed shipments the process
+didn't catch.
+
+
+```{r diagram, echo=FALSE, out.width="1\\linewidth", fig.align="center", fig.cap="Workflow Visualized"}
+knitr::include_graphics("diagram.drawio.pdf")
+```
+
