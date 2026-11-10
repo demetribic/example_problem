@@ -1,4 +1,7 @@
 library(tidyverse)
+library(shiny)
+library(plotly)
+library(DT)
 
 items = read_csv('items.csv')
 
@@ -54,7 +57,6 @@ server <- function(input, output, session) {
   
   summary_data <- reactive({
     req(input$dates, input$target)
-    
     groups <- c(
       "company",
       if (input$target == "product") c("item_id", "name")
@@ -85,7 +87,7 @@ server <- function(input, output, session) {
       ) |>
       mutate(
         label = if (input$target == "product")
-          paste(company, name, sep = " | ")
+          paste(company, name, item_id, sep = " | ")
         else company
       )
   })
